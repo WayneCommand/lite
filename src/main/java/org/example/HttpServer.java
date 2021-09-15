@@ -12,6 +12,7 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import org.example.router.Router;
 
 public class HttpServer {
 
@@ -19,6 +20,8 @@ public class HttpServer {
     public HttpServer(int port) {
         this.port = port;
     }
+
+    private Router router = new Router();
 
     public static void main(String[] args) throws Exception {
 
@@ -41,7 +44,7 @@ public class HttpServer {
                             ChannelPipeline p = ch.pipeline();
                             p.addLast(new HttpRequestDecoder());
                             p.addLast(new HttpResponseEncoder());
-                            p.addLast(new CustomHttpServerHandler());
+                            p.addLast(new RouterHttpServerHandler(router));
                         }
                     });
 

@@ -6,14 +6,26 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
+import org.example.router.Provider;
+import org.example.router.ProviderHandler;
+import org.example.router.Router;
+
+import java.util.Objects;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-public class CustomHttpServerHandler extends SimpleChannelInboundHandler<Object> {
+public class RouterHttpServerHandler extends SimpleChannelInboundHandler<HttpMessage> {
 
     private HttpRequest request;
     StringBuilder responseData = new StringBuilder();
+
+    private final Router router;
+
+    public RouterHttpServerHandler(Router router) {
+        this.router = router;
+    }
+
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
@@ -21,19 +33,25 @@ public class CustomHttpServerHandler extends SimpleChannelInboundHandler<Object>
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
+    protected void channelRead0(ChannelHandlerContext ctx, HttpMessage msg) {
+
         if (msg instanceof HttpRequest) {
             HttpRequest request = this.request = (HttpRequest) msg;
+            final Provider provider = router.match(request.uri());
+
+            final ProviderHandler handler = provider.getHandler();
+
+            if (Objects.isNull(handler))
+                return;
+
+            final String content = handler.handle(msg);
 
             if (HttpUtil.is100ContinueExpected(request)) {
                 writeResponse(ctx);
             }
 
-            responseData.setLength(0);
-            responseData.append(RequestUtils.formatParams(request));
+            writeResponse(ctx, OK, content);
         }
-
-        responseData.append(RequestUtils.evaluateDecoderResult(request));
 
         if (msg instanceof HttpContent) {
             HttpContent httpContent = (HttpContent) msg;
@@ -44,7 +62,7 @@ public class CustomHttpServerHandler extends SimpleChannelInboundHandler<Object>
             if (msg instanceof LastHttpContent) {
                 LastHttpContent trailer = (LastHttpContent) msg;
                 responseData.append(RequestUtils.prepareLastResponse(request, trailer));
-                writeResponse(ctx, trailer, responseData);
+                writeResponse(ctx, OK, responseData.toString());
             }
         }
     }
@@ -54,11 +72,10 @@ public class CustomHttpServerHandler extends SimpleChannelInboundHandler<Object>
         ctx.write(response);
     }
 
-    private void writeResponse(ChannelHandlerContext ctx, LastHttpContent trailer, StringBuilder responseData) {
+    private void writeResponse(ChannelHandlerContext ctx, HttpResponseStatus status, String responseData) {
         boolean keepAlive = HttpUtil.isKeepAlive(request);
 
-        FullHttpResponse httpResponse = new DefaultFullHttpResponse(HTTP_1_1, ((HttpObject) trailer).decoderResult()
-                .isSuccess() ? OK : BAD_REQUEST, Unpooled.copiedBuffer(responseData.toString(), CharsetUtil.UTF_8));
+        FullHttpResponse httpResponse = new DefaultFullHttpResponse(HTTP_1_1, status, Unpooled.copiedBuffer(responseData, CharsetUtil.UTF_8));
 
         httpResponse.headers()
                 .set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
