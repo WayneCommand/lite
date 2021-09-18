@@ -39,10 +39,12 @@ public class RouterHttpServerHandler extends SimpleChannelInboundHandler<HttpMes
             HttpRequest request = this.request = (HttpRequest) msg;
             final Provider provider = router.match(request.uri());
 
-            final ProviderHandler handler = provider.getHandler();
-
-            if (Objects.isNull(handler))
+            if (Objects.isNull(provider)){
+                writeResponse(ctx, NOT_FOUND, "url not found.");
                 return;
+            }
+
+            final ProviderHandler handler = provider.getHandler();
 
             final String content = handler.handle(msg);
 
