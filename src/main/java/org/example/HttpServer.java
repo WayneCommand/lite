@@ -17,18 +17,12 @@ import org.example.router.Router;
 public class HttpServer {
 
     private int port;
+
     public HttpServer(int port) {
         this.port = port;
     }
 
     private Router router = new Router();
-
-    public static void main(String[] args) throws Exception {
-
-        int port = args.length > 0 ? Integer.parseInt(args[0]) : 8080;
-
-        new HttpServer(port).run();
-    }
 
     public void run() throws Exception {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);

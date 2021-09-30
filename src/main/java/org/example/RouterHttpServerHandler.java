@@ -51,8 +51,7 @@ public class RouterHttpServerHandler extends SimpleChannelInboundHandler<HttpMes
             if (HttpUtil.is100ContinueExpected(request)) {
                 writeResponse(ctx);
             }
-
-            writeResponse(ctx, OK, content);
+            writeResponse(ctx, OK, content.concat("\n\r"));
         }
 
         if (msg instanceof HttpContent) {

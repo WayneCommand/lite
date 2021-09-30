@@ -5,13 +5,14 @@ import io.netty.handler.codec.DecoderResult;
 import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class RequestUtils {
 
-    static StringBuilder formatParams(HttpRequest request) {
-        StringBuilder responseData = new StringBuilder();
+    public static Map<String, String> formatParams(HttpRequest request) {
+        Map<String, String> paramsMap = new HashMap<>();
         QueryStringDecoder queryStringDecoder = new QueryStringDecoder(request.uri());
         Map<String, List<String>> params = queryStringDecoder.parameters();
         if (!params.isEmpty()) {
@@ -19,19 +20,14 @@ public class RequestUtils {
                 String key = p.getKey();
                 List<String> vals = p.getValue();
                 for (String val : vals) {
-                    responseData.append("Parameter: ")
-                            .append(key.toUpperCase())
-                            .append(" = ")
-                            .append(val.toUpperCase())
-                            .append("\r\n");
+                    paramsMap.put(key, val);
                 }
             }
-            responseData.append("\r\n");
         }
-        return responseData;
+        return paramsMap;
     }
 
-    static StringBuilder formatBody(HttpContent httpContent) {
+    public static StringBuilder formatBody(HttpContent httpContent) {
         StringBuilder responseData = new StringBuilder();
         ByteBuf content = httpContent.content();
         if (content.isReadable()) {
@@ -42,7 +38,7 @@ public class RequestUtils {
         return responseData;
     }
 
-    static StringBuilder evaluateDecoderResult(HttpObject o) {
+    public static StringBuilder evaluateDecoderResult(HttpObject o) {
         StringBuilder responseData = new StringBuilder();
         DecoderResult result = o.decoderResult();
 
@@ -55,7 +51,7 @@ public class RequestUtils {
         return responseData;
     }
 
-    static StringBuilder prepareLastResponse(HttpRequest request, LastHttpContent trailer) {
+    public static StringBuilder prepareLastResponse(HttpRequest request, LastHttpContent trailer) {
         StringBuilder responseData = new StringBuilder();
         responseData.append("Good Bye!\r\n");
 
